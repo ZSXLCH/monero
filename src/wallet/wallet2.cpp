@@ -124,8 +124,8 @@ using namespace cryptonote;
 
 #define SECOND_OUTPUT_RELATEDNESS_THRESHOLD 0.0f
 
-#define SUBADDRESS_LOOKAHEAD_MAJOR 50
-#define SUBADDRESS_LOOKAHEAD_MINOR 200
+#define SUBADDRESS_LOOKAHEAD_MAJOR 5
+#define SUBADDRESS_LOOKAHEAD_MINOR 20
 
 #define KEY_IMAGE_EXPORT_FILE_MAGIC "Monero key image export\003"
 
@@ -2457,7 +2457,8 @@ void wallet2::process_new_transaction(const crypto::hash &txid, const cryptonote
           uint64_t amount = tx.vout[o].amount ? tx.vout[o].amount : tx_scan_info[o].amount;
           if (!pool)
           {
-	    m_transfers.push_back(transfer_details{});
+	    boost::unique_lock<boost::shared_mutex> lock(m_transfers_mutex);
+      m_transfers.push_back(transfer_details{});
 	    transfer_details& td = m_transfers.back();
 	    td.m_block_height = height;
 	    td.m_internal_output_index = o;
@@ -2560,6 +2561,7 @@ void wallet2::process_new_transaction(const crypto::hash &txid, const cryptonote
           uint64_t extra_amount = amount - burnt;
           if (!pool)
           {
+            boost::unique_lock<boost::shared_mutex> lock(m_transfers_mutex);
             transfer_details &td = m_transfers[kit->second];
 	    td.m_block_height = height;
 	    td.m_internal_output_index = o;
@@ -5022,7 +5024,7 @@ bool wallet2::load_keys_buf(const std::string& keys_buf, const epee::wipeable_st
 
   r = epee::serialization::load_t_from_binary(m_account, account_data);
   THROW_WALLET_EXCEPTION_IF(!r, error::invalid_password);
-  if (m_key_device_type == hw::device::device_type::LEDGER || m_key_device_type == hw::device::device_type::TREZOR) {
+  if (m_key_device_type != hw::device::device_type::SOFTWARE) {
     LOG_PRINT_L0("Account on device. Initing device...");
     hw::device &hwdev = lookup_device(m_device_name);
     THROW_WALLET_EXCEPTION_IF(!hwdev.set_name(m_device_name), error::wallet_internal_error, "Could not set device name " + m_device_name);
