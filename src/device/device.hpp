@@ -33,19 +33,16 @@
 #include "crypto/chacha.h"
 #include "ringct/rctTypes.h"
 #include "cryptonote_config.h"
+#include <boost/thread/recursive_mutex.hpp>
 
 
-#ifndef USE_DEVICE_LEDGER
-#define USE_DEVICE_LEDGER 1
-#endif
 
-#if !defined(HAVE_HIDAPI) 
-#undef  USE_DEVICE_LEDGER
-#define USE_DEVICE_LEDGER 0
-#endif
-
-#if USE_DEVICE_LEDGER
+#if defined(HAVE_HIDAPI) || defined(HAVE_MONERUJO)
 #define WITH_DEVICE_LEDGER
+#endif
+
+#if defined(HAVE_MONERUJO)
+#define WITH_DEVICE_SIDEKICK
 #endif
 
 // forward declaration needed because this header is included by headers in libcryptonote_basic which depends on libdevice
@@ -104,7 +101,8 @@ namespace hw {
         {
           SOFTWARE = 0,
           LEDGER = 1,
-          TREZOR = 2
+          TREZOR = 2,
+          SIDEKICK = 3
         };
 
 
